@@ -1,0 +1,97 @@
+//とりあえずフロップを見に行く
+AI.PreFlop {
+    _ret  = IARRAY()
+    AI.strength = TOINT(FUNCTIONEX("saori\TexasHoldemUtil\TexasHoldemUtil.dll", "hand", TH.hand[0], TH.hand[1]))
+    if (ASEARCH("check", _argv) != -1) {
+        _ret  ,= "check"
+    }
+    elseif (ASEARCH("call", _argv) != -1 && TH.current_bet <= TH.blind * 3) {
+        _ret  ,= "call"
+    }
+    elseif (TH.current_bet <= TH.blind * 3 || TH.stack < TH.blind * 10) {
+        _ret  ,= "allin"
+    }
+    else {
+        _ret  ,= "fold"
+    }
+    _ret
+    return
+}
+
+AI.Flop {
+    _ret  = IARRAY()
+    _strength = TOINT(FUNCTIONEX("saori\TexasHoldemUtil\TexasHoldemUtil.dll", "hand", TH.hand[0], TH.hand[1], TH.community[0], TH.community[1], TH.community[2]))
+    //何か役が出来たらraise
+    if (_strength > AI.strength) {
+        AI.strength = _strength
+        if (ASEARCH("raise", _argv) != -1) {
+            _ret  ,= "raise"
+            _ret  ,= TOINT(TH.pot / 10) * 5
+        }
+        else {
+            _ret  ,= "allin"
+        }
+    }
+    // check出来るときはcheck
+    elseif (ASEARCH("check", _argv) != -1) {
+        _ret  ,= "check"
+    }
+    else {
+        _ret  ,= "fold"
+    }
+    _ret
+    return
+}
+
+AI.Turn {
+    _ret  = IARRAY()
+    _strength = TOINT(FUNCTIONEX("saori\TexasHoldemUtil\TexasHoldemUtil.dll", "hand", TH.hand[0], TH.hand[1], TH.community[0], TH.community[1], TH.community[2], TH.community[3]))
+    if (_strength > AI.strength) {
+        AI.strength = _strength
+        if (ASEARCH("raise", _argv) != -1) {
+            _ret  ,= "raise"
+            _ret  ,= TOINT(TH.pot / 10) * 5
+        }
+        else {
+            _ret  ,= "allin"
+        }
+    }
+    elseif (ASEARCH("check", _argv) != -1) {
+        _ret  ,= "check"
+    }
+    // 1-Pair以上の役が出来ていたらcall
+    elseif (AI.strength > 1) {
+        _ret  ,= "call"
+    }
+    else {
+        _ret  ,= "allin"
+    }
+    _ret
+    return
+}
+
+AI.River {
+    _ret  = IARRAY()
+    _strength = TOINT(FUNCTIONEX("saori\TexasHoldemUtil\TexasHoldemUtil.dll", "hand", TH.hand[0], TH.hand[1], TH.community[0], TH.community[1], TH.community[2], TH.community[3], TH.community[4]))
+    if (_strength > AI.strength) {
+        AI.strength = _strength
+        if (ASEARCH("raise", _argv) != -1) {
+            _ret  ,= "raise"
+            _ret  ,= TOINT(TH.pot / 10) * 5
+        }
+        else {
+            _ret  ,= "allin"
+        }
+    }
+    elseif (ASEARCH("check", _argv) != -1) {
+        _ret  ,= "check"
+    }
+    elseif (AI.strength > 1) {
+        _ret  ,= "call"
+    }
+    else {
+        _ret  ,= "fold"
+    }
+    _ret
+    return
+}

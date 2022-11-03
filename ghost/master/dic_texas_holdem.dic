@@ -1,0 +1,197 @@
+Version {
+    "POKER/1.0"
+}
+
+GhostName {
+    "卓上誘技用カジノチップ(緑)"
+}
+
+OnPoker {
+    //応答が必要なイベント。
+    //応答方法はraiseotherかnotifyotherを使う。
+
+    //Reference0: プロトコルバージョン(POKER/1.0)
+    //Reference1: サーバーゴースト名
+    //Reference2: サーバーのイベント名
+
+    if (reference[3] == "hello") {
+        //参加申請をする。断られることもある。
+
+        _str  = "\![raiseother,%(reference[1]),%(reference[2]),%(Version),%(GhostName)"
+        _str  += "]"
+        _str
+        return
+    }
+    elseif (reference[3] == "action") {
+        //Reference4以降に使用可能なアクションが入っている。
+
+        //使用可能なアクションは
+        //bet,raise,allin,check,call,foldの6つの内のいくつか。
+        //返答しない場合は自動的にfoldになるので注意。
+        //bet/raiseする場合はレイズ額も送る必要がある。
+
+        //使用可能なアクションを配列に保存。
+        _action = IARRAY()
+        _i    = 4
+        while (reference[_i]) {
+            _action ,= reference[_i]
+            _i++
+        }
+        //プリフロップ、フロップ、ターン、リバーで処理を分ける。
+        _ret  = IARRAY()
+        _size = ARRAYSIZE(TH.community)
+        if (_size == 0) {
+            _ret  = AI.PreFlop(_action)
+        }
+        elseif (_size == 3) {
+            _ret  = AI.Flop(_action)
+        }
+        elseif (_size == 4) {
+            _ret  = AI.Turn(_action)
+        }
+        elseif (_size == 5) {
+            _ret  = AI.River(_action)
+        }
+        _str  =  "\![raiseother,%(reference[1]),%(reference[2]),%(Version),%(GhostName),%(_ret[0])"
+        if (ARRAYSIZE(_ret) > 1) {
+            _str  += "," + _ret[1]
+        }
+        _str  += "]"
+        _str
+        return
+    }
+}
+
+OnPokerNotify {
+    //応答する必要の無いイベント。
+
+    //Reference0: プロトコルのバージョン(POKER/1.0)
+
+    if (reference[1] == "game_start") {
+        //Reference2以降に参加できたゴースト名が入っている
+
+        _i    = 2
+        while (reference[_i]) {
+            if (reference[_i] == GhostName) {
+              //ゲームに参加できた
+              return
+            }
+            _i++
+        }
+        // 参加人数が多くて弾かれた
+    }
+    elseif (reference[1] == "round_start") {
+        //Reference2: ブラインドの金額
+        //Reference3以降に「ゴースト名(バイト値1)スタック」が入っている
+
+        TH.blind    = TOINT(reference[2])
+        TH.bet      = 0
+        TH.players  = IARRAY()
+        _i    = 3
+        while (reference[_i]) {
+            TH.players  ,= reference[_i]
+            _info = SPLIT(reference[_i], CHR(0x01))
+            if (_info[0] == GhostName) {
+                TH.stack  = TOINT(_info[1])
+            }
+            _i++
+        }
+        TH.round_players  = ARRAYSIZE(TH.players)
+        TH.n_players      = TH.round_players
+    }
+    elseif (reference[1] == "hand") {
+        //Reference2: 配られたカードの情報
+        //Reference3: 配られたカードの情報
+        //スートは頭文字(S,H,C,D)の4つのいずれか、その後に数字が続く。
+        //例:
+        //Reference2: S1
+        //Reference3: H12
+        //この形式はFLIPでも一緒。
+
+        TH.hand = IARRAY()
+        TH.hand ,= reference[2]
+        TH.hand ,= reference[3]
+    }
+    elseif (reference[1] == "flip") {
+        //Reference2: 現在のポット
+        //Reference3以降にコミュニティカードの情報が入っている。
+        //プリフロップならReference3以降は存在しない。
+
+        TH.pot          = TOINT(reference[2])
+        TH.community    = IARRAY()
+        _i    = 3
+        while (reference[_i]) {
+            TH.community    ,= reference[_i]
+            _i++
+        }
+        TH.current_bet  = 0
+    }
+    elseif (reference[1] == "blind_bet") {
+        //Reference2: 強制ベットの金額
+        //SBやBBでの強制ベットをしたことが通知される。
+
+        TH.bet    = TOINT(reference[2])
+    }
+    elseif (reference[1] == "bet") {
+        //アクションを行ったプレイヤーとベット周りの情報。
+
+        //Reference2: 現在のベット総額
+        //Reference3: 現在のベット額
+        //Reference4: アクションを行ったプレイヤーのゴースト名
+        //Reference5: 行ったアクション
+
+        TH.total_bet    = TOINT(reference[2])
+        TH.current_bet  = TOINT(reference[3])
+        _player         = reference[4]
+        _action         = reference[5]
+        if (_action == "fold") {
+            TH.n_players--
+        }
+    }
+    elseif (reference[1] == "show_down") {
+        //ショーダウン時のカード情報が送られてくる。
+        //Reference2以降に
+        //「ゴースト名(バイト値1)1枚目のカード(バイト値1)2枚目のカード」
+        //が入っている。
+    }
+    elseif (reference[1] == "round_result") {
+        //そのラウンドの勝者、および参加者の残りスタックの情報。
+
+        //Reference2: 現在のラウンドの勝者がバイト値1区切りで入っている。
+        //Reference3以降に「ゴースト名(バイト値1)スタック」が入っている。
+
+        //基本的に勝者は1人だが2人以上になるケースもある。
+        //また、スタックが0になったのはここでしか通知しないため注意。
+
+        _winner = SPLIT(reference[2], CHR(0x01))
+        _i    = 3
+        while (reference[_i]) {
+            TH.players  ,= reference[_i]
+            _info = SPLIT(reference[_i], CHR(0x01))
+            if (_info[0] == GhostName) {
+                TH.stack  = TOINT(_info[1])
+            }
+            _i++
+        }
+        if (ASEARCH(GhostName, _winner) != -1) {
+            //そのラウンドで勝った時のリアクション
+        }
+        if (TH.stack <= 0) {
+            //ゲームに負けた時のリアクション
+        }
+    }
+    elseif (reference[1] == "game_result") {
+        //Reference2: ゲームの勝者のゴースト名
+
+        _winner = reference[2]
+        //この辺にゲーム終了時の処理
+        if (_winner == GhostName) {
+            //ゲームに勝ったときのリアクション
+        }
+    }
+}
+
+OnEraseVar {
+    ERASEVAR("TH.stack", "TH.hand", "TH.community", "TH.blind", "TH.bet", "TH.pot", "TH.current_bet", "TH.players", "TH.n_players")
+}
+
