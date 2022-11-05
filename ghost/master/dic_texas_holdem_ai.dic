@@ -24,7 +24,11 @@ AI.Flop {
     //何か役が出来たらraise
     if (_strength > AI.strength) {
         AI.strength = _strength
-        if (ASEARCH("raise", _argv) != -1) {
+        if (ASEARCH("bet", _argv) != -1) {
+            _ret  ,= "bet"
+            _ret  ,= TOINT(TH.pot / 10) * 5
+        }
+        elseif (ASEARCH("raise", _argv) != -1) {
             _ret  ,= "raise"
             _ret  ,= TOINT(TH.pot / 10) * 5
         }
