@@ -52,7 +52,11 @@ AI.Turn {
     _strength = TOINT(FUNCTIONEX("saori\TexasHoldemUtil\TexasHoldemUtil.dll", "hand", TH.hand[0], TH.hand[1], TH.community[0], TH.community[1], TH.community[2], TH.community[3]))
     if (_strength > AI.strength) {
         AI.strength = _strength
-        if (ASEARCH("raise", _argv) != -1) {
+        if (ASEARCH("bet", _argv) != -1) {
+            _ret  ,= "bet"
+            _ret  ,= TOINT(TH.pot / 10) * 5
+        }
+        elseif (ASEARCH("raise", _argv) != -1) {
             _ret  ,= "raise"
             _ret  ,= TOINT(TH.pot / 10) * 5
         }
@@ -79,7 +83,11 @@ AI.River {
     _strength = TOINT(FUNCTIONEX("saori\TexasHoldemUtil\TexasHoldemUtil.dll", "hand", TH.hand[0], TH.hand[1], TH.community[0], TH.community[1], TH.community[2], TH.community[3], TH.community[4]))
     if (_strength > AI.strength) {
         AI.strength = _strength
-        if (ASEARCH("raise", _argv) != -1) {
+        if (ASEARCH("bet", _argv) != -1) {
+            _ret  ,= "bet"
+            _ret  ,= TOINT(TH.pot / 10) * 5
+        }
+        elseif (ASEARCH("raise", _argv) != -1) {
             _ret  ,= "raise"
             _ret  ,= TOINT(TH.pot / 10) * 5
         }
